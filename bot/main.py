@@ -1,29 +1,33 @@
 import os
 from aiogram import Bot, Dispatcher, types
-from aiogram.types import Message
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
+from aiogram.fsm.storage.memory import MemoryStorage
 from fastapi import FastAPI, Request
+from dotenv import load_dotenv
 
-TOKEN = os.getenv("BOT_TOKEN")
-WEBHOOK_PATH = "/webhook"
-RENDER_EXTERNAL_URL = os.getenv("RENDER_EXTERNAL_URL", "")
-WEBHOOK_URL = RENDER_EXTERNAL_URL + WEBHOOK_PATH
+load_dotenv()
 
-bot = Bot(token=TOKEN)
-dp = Dispatcher()
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
-@dp.message()
-async def handle_message(message: Message):
-    await message.answer("Привет! Бот работает на webhook (FastAPI).")
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher(storage=MemoryStorage())
 
 app = FastAPI()
+
+
+@dp.message()
+async def handle_message(message: types.Message):
+    await message.reply("Привет! Бот работает через webhook.")
+
 
 @app.on_event("startup")
 async def on_startup():
     await bot.set_webhook(WEBHOOK_URL)
 
-@app.post(WEBHOOK_PATH)
-async def process_webhook(request: Request):
-    body = await request.body()
-    update = types.Update.parse_raw(body)
+
+@app.post("/webhook")
+async def telegram_webhook(req: Request):
+    update = types.Update(**await req.json())
     await dp.feed_update(bot, update)
-    return {"ok": True}
+    return {"status": "ok"}

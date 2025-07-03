@@ -1,3 +1,4 @@
-# Football Bot with Webhook (Render/FastAPI)
+# Football Bot (Webhook-ready)
 
-Простой Telegram-бот на FastAPI с webhook для деплоя на Render.
+## Установка
+1. Установи зависимости:
